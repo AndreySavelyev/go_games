@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/streadway/amqp"
+	"gopkg.in/mgo.v2"
 )
 
 func failOnError(err error, msg string) {
@@ -15,6 +16,14 @@ func failOnError(err error, msg string) {
 }
 
 func main() {
+	session, err := mgo.Dial("localhost")
+	if err != nil {
+		panic(err)
+	}
+	defer session.Close()
+
+	c := session.DB("gogames").C("users")
+
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -49,9 +58,22 @@ func main() {
 	go func() {
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
+			save(fmt.Sprintf("%s", d.Body), c)
 		}
 	}()
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
 	<-forever
+}
+
+type User struct {
+	Number string
+}
+
+func save(number string, c *mgo.Collection) {
+
+	err := c.Insert(&User{number})
+	if err != nil {
+		log.Fatal(err)
+	}
 }

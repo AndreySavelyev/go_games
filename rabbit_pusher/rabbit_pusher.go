@@ -34,7 +34,7 @@ func main() {
 	)
 	failOnError(err, "Failed to declare a queue")
 
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 100000; i++ {
 		body := strconv.Itoa(i)
 		err = ch.Publish(
 			"",     // exchange
